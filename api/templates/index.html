@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+{% include "base.html" %}
+    <body class="min-h-screen flex items-center w-full">
+            <div class="max-w-3xl w-full p-4 mx-auto">
+                <p>hi 👋, I'm shailesh <span id="ipa" class="text-rose-500 cursor-pointer">/ˈʃaɪˌleɪʃ/</span>. i like building stuff.</p>
+                <p class="mt-4">i like making things — circuits, code, and everything in between. <br> right now <span id="lynk"></span><img id="lynk-icon" class="hidden w-5 inline-block ml-2 -mt-1"></img><span id="lynkTime" class="hidden ml-2"></span><span id="lynkPostText"></span></p>
+                <p class="mt-4">i really love formula 1 🏎️. the precision, the speed, the engineering — i try to bring that mindset into everything i make.</p>
+                <p class="mt-4">this site’s minimal for now. more soon.</p>
+                <p class="mt-4">find me: <span class="text-sky-500 cursor-pointer" onclick="window.open('mailto:shaileshsaravanan385@gmail.com')">[email]</span> <span class="text-sky-500 cursor-pointer" onclick="window.open('https://github.com/shaileshsaravanan')">[github]</span> <span class="text-sky-500 cursor-pointer" onclick="window.open('https://www.linkedin.com/in/notshailesh/')">[linkedin]</span></p>
+            </div>
+    </body>
+</html> 
+<script>
+
+    const ipaElement = document.getElementById('ipa');
+    const ipaAudio = new Audio('/static/ipa.mp3');
+    ipaElement.addEventListener('click', () => {
+        ipaAudio.play();
+    });
+
+    const lynkId = '1749650366140--330-a55c6069-0';
+    const lynkWs = new WebSocket('wss://lynk-ws-server.onrender.com');
+
+    const lynkElement = document.getElementById('lynk');
+    const lynkIconElement = document.getElementById('lynk-icon');
+    const lynkTimeElement = document.getElementById('lynkTime');
+    const lynkPostTextElement = document.getElementById('lynkPostText');
+
+    let lynkTimeUpdater = null;
+    let currentAppTime = "";
+
+    let dotCount = 0;
+    function updateConnectingDots() {
+        lynkElement.innerHTML = "connecting" + '.'.repeat(dotCount);
+        lynkPostTextElement.innerHTML = '';
+        dotCount = (dotCount + 1) % 4;
+    }
+
+    updateConnectingDots();
+    const connectingInterval = setInterval(updateConnectingDots, 500);
+
+    const fallbackTimeout = setTimeout(() => {
+        clearInterval(connectingInterval);
+        lynkElement.innerHTML = "i'm offline";
+        lynkIconElement.classList.add('hidden');
+        lynkTimeElement.classList.add('hidden');
+        lynkPostTextElement.innerHTML = ', probably exploring the wilderness or js sleeping';
+    }, 8000);
+
+    lynkWs.onopen = () => {
+        lynkWs.send(JSON.stringify({ type: 'init', userId: lynkId }));
+    };
+
+    lynkWs.onmessage = (event) => {
+        clearTimeout(fallbackTimeout);
+        clearInterval(connectingInterval);
+
+        try {
+            const raw = JSON.parse(event.data);
+            let cleanMessage = raw.message;
+            const prefix = "Ping event received: ";
+            if (typeof cleanMessage === "string" && cleanMessage.startsWith(prefix)) {
+                cleanMessage = cleanMessage.slice(prefix.length);
+            }
+
+            const parsed = JSON.parse(cleanMessage);
+            console.log(parsed);
+
+            const currentApp = parsed.app;
+            lynkElement.innerHTML = "i've been on " + currentApp;
+
+            if (parsed.apps_data[currentApp].icon !== null) {
+                lynkIconElement.src = 'data:image/png;base64,' + parsed.apps_data[currentApp].icon;
+                lynkIconElement.classList.remove('hidden');
+            } else {
+                lynkIconElement.classList.add('hidden');
+            }
+
+            currentAppTime = parsed.usage[currentApp];
+            lynkTimeElement.classList.remove('hidden');
+
+            clearInterval(lynkTimeUpdater);
+            lynkTimeElement.classList.remove('hidden');
+
+            lynkTimeUpdater = setInterval(() => {
+                currentAppTime = incrementTimeString(currentAppTime);
+                lynkTimeElement.innerHTML = 'for ' + currentAppTime;
+            }, 1000);
+
+            lynkPostTextElement.innerHTML = ', probably deep in smth or js messing around';
+
+        } catch (err) {
+            console.warn("Failed to parse message:", err, event.data);
+            lynkElement.innerHTML = "i'm offline";
+            lynkIconElement.classList.add('hidden');
+            lynkTimeElement.classList.add('hidden');
+            lynkPostTextElement.innerHTML = ', probably exploring the wilderness or js sleeping';
+        }
+    };
+
+    lynkWs.onerror = (e) => console.error('WebSocket error', e);
+    lynkWs.onclose = () => console.log('WebSocket closed');
+
+    function incrementTimeString(timeStr) {
+        const match = timeStr.match(/(\d+)h\s+(\d+)m\s+(\d+)s/);
+        if (!match) return timeStr;
+
+        let [ , h, m, s ] = match.map(Number);
+        let totalSeconds = h * 3600 + m * 60 + s + 1;
+
+        const newH = Math.floor(totalSeconds / 3600);
+        const newM = Math.floor((totalSeconds % 3600) / 60);
+        const newS = totalSeconds % 60;
+
+        return `${newH}h ${newM}m ${newS}s`;
+    }
+
+</script>
