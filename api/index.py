@@ -18,13 +18,8 @@ def scan_tree(root_path):
 
 @app.route("/")
 def home():
-    project_root = pathlib.Path(__file__).resolve().parent
-    tree = scan_tree(str(project_root))
-    data = {
-        "env": dict(os.environ),
-        "files": tree
-    }
-    return jsonify(data)
+    commit = os.environ.get("VERCEL_GIT_COMMIT_SHA")
+    return jsonify({"VERCEL_GIT_COMMIT_SHA": commit})
 
 if __name__ == "__main__":
     app.run(debug=True)
