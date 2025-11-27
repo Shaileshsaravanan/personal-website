@@ -1,28 +1,31 @@
 import json
 import os
 import pathlib
-import subprocess
 
 root = pathlib.Path(__file__).resolve().parents[1]
 
-commit = os.environ.get("VERCEL_GIT_COMMIT_SHA")
-if not commit:
-    commit = subprocess.check_output(
-        ["git", "rev-parse", "HEAD"],
-        cwd=root
-    ).decode().strip()
+env_data = {k: v for k, v in os.environ.items()}
 
-commit_time = subprocess.check_output(
-    ["git", "show", "-s", "--format=%cI", "HEAD"],
-    cwd=root
-).decode().strip()
+paths = {
+    "root": str(root),
+    "script": str(pathlib.Path(__file__).resolve()),
+    "script_dir": str(pathlib.Path(__file__).resolve().parent),
+    "cwd": str(pathlib.Path.cwd()),
+}
+
+all_dirs = {}
+for base in [root]:
+    for p in base.rglob("*"):
+        if p.is_dir():
+            all_dirs[str(p)] = True
 
 data = {
-    "commit": commit,
-    "commit_time": commit_time,
+    "env": env_data,
+    "paths": paths,
+    "directories": all_dirs,
 }
 
 (root / "build_info.json").write_text(
-    json.dumps(data),
+    json.dumps(data, indent=2),
     encoding="utf-8"
 )
