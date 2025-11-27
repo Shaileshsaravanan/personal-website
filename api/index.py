@@ -1,14 +1,5 @@
 import os, json, pathlib, os as _os
 from flask import Flask, jsonify
-import subprocess
-
-commit = "bb2183ff976fc8697288b441066da48c11f4aba2"
-
-output = subprocess.check_output(
-    ["git", "show", commit, "--no-color"],
-    text=True,
-    stderr=subprocess.STDOUT
-)
 
 app = Flask(__name__)
 
@@ -34,10 +25,6 @@ def home():
         "files": tree
     }
     return jsonify(data)
-
-@app.route("/git-commit")
-def git_commit():
-    return jsonify({"commit_diff": output})
 
 if __name__ == "__main__":
     app.run(debug=True)
