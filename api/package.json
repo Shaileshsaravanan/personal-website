@@ -12,7 +12,6 @@
   "scripts": {
     "tailwind": "npx tailwindcss -i static/css/input.css -o static/css/output.css --watch",
     "flask": "python3 index.py",
-    "start": "concurrently -n TAILWIND,FLASK -c blue,green \"npm:tailwind\" \"npm:flask\"",
-    "build": "python scripts/build.py"
+    "start": "concurrently -n TAILWIND,FLASK -c blue,green \"npm:tailwind\" \"npm:flask\""
   }
 }

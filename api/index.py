@@ -1,24 +1,30 @@
-import json
-import pathlib
-from flask import Flask, jsonify, render_template
+import os, json, pathlib, os as _os
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
-_build_info_path = pathlib.Path(__file__).with_name("build_info.json")
-if _build_info_path.exists():
-    _build_info = json.loads(_build_info_path.read_text(encoding="utf-8"))
-else:
-    _build_info = {"commit": None, "commit_time": None}
-
+def scan_tree(root_path):
+    result = {"type": "directory", "name": os.path.basename(root_path), "children": []}
+    try:
+        for entry in os.listdir(root_path):
+            full = os.path.join(root_path, entry)
+            if os.path.isdir(full):
+                result["children"].append(scan_tree(full))
+            else:
+                result["children"].append({"type": "file", "name": entry})
+    except PermissionError:
+        pass
+    return result
 
 @app.route("/")
-def build_info_json():
-    return jsonify(_build_info)
+def home():
+    project_root = pathlib.Path(__file__).resolve().parent
+    tree = scan_tree(str(project_root))
+    data = {
+        "env": dict(os.environ),
+        "files": tree
+    }
+    return jsonify(data)
 
-
-@app.route("/")
-def index():
-    return render_template("index.html", build_info=_build_info)
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
