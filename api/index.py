@@ -1,25 +1,22 @@
-import os, json, pathlib, os as _os
+import os
 from flask import Flask, jsonify
+import requests
+import environs
 
 app = Flask(__name__)
+env = environs.Env()
 
-def scan_tree(root_path):
-    result = {"type": "directory", "name": os.path.basename(root_path), "children": []}
-    try:
-        for entry in os.listdir(root_path):
-            full = os.path.join(root_path, entry)
-            if os.path.isdir(full):
-                result["children"].append(scan_tree(full))
-            else:
-                result["children"].append({"type": "file", "name": entry})
-    except PermissionError:
-        pass
-    return result
-
+githubUsername = env.str("OWNER")
+githubRepository = env.str("REPOSITORY")
+commitSha = os.environ.get("VERCEL_GIT_COMMIT_SHA")
+url = f"https://api.github.com/repos/{githubUsername}/{githubRepository}/commits/{commitSha}"
+r = requests.get(url)
+repoData = r.json()
+commitData = repoData["commit"]
+buildData = { 'sha': repoData['sha'], 'timestamp': commitData['author']['date'] }
 @app.route("/")
 def home():
-    commit = os.environ.get("VERCEL_GIT_COMMIT_SHA")
-    return jsonify({"VERCEL_GIT_COMMIT_SHA": commit})
+    return jsonify(buildData)
 
 if __name__ == "__main__":
     app.run(debug=True)
