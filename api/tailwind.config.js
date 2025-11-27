@@ -6,12 +6,7 @@ module.exports = {
     "./node_modules/flowbite/**/*.js"
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        sans: ['"IBM Plex Mono"', 'ui-sans-serif', 'system-ui'],
-        mono: ['"IBM Plex Mono"', 'monospace'],
-      }
-    },
+    extend: {},
   },
   plugins: [
     require("flowbite/plugin")
